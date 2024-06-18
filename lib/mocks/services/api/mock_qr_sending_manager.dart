@@ -28,7 +28,7 @@ class Mock_QRCodeSendingManager extends IQRCodeSendingManager implements QRCodeS
 
 
   @override
-  Future<void> deleteCodesFromDB(List<QRCode> codes) async {
+  Future<void> setQrCodesAsAtoned(List<QRCode> codes) async {
     await Future.delayed(const Duration(seconds: 2));
     _currentState = QRStreamState.updated;
     sinkState(_currentState);
@@ -49,7 +49,7 @@ class Mock_QRCodeSendingManager extends IQRCodeSendingManager implements QRCodeS
     sinkState(_currentState);
 
     /// now we can delete this codes from db and inform UI
-    deleteCodesFromDB(codes);
+    setQrCodesAsAtoned(codes);
   }
 
 

@@ -11,7 +11,7 @@ class SQLiteDBLayer {
         await db.execute(sql);
       });
     } catch (err) {
-      print("ERROR:DBProvider:73:: $err");
+      print("Create table error: $err");
     }
   }
 
@@ -24,6 +24,9 @@ class SQLiteDBLayer {
         version: 1,
         onCreate: (Database db, int version) async {
           await createTables(db);
+          await db.execute('''
+            INSERT INTO config(factory_name, auth_token) VALUES(NULL, NULL);
+          ''');
         },
         onOpen: (db) async {
           final List<Map<String, Object?>> rawTables =

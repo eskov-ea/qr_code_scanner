@@ -1,4 +1,6 @@
+import 'package:qrs_scaner/models/app_config.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
+import 'package:qrs_scaner/services/database/database_laers/config_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/qr_code_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/sqlite_db_layer.dart';
 import 'package:sqflite/sqflite.dart';
@@ -8,10 +10,12 @@ class DBProvider {
 
   DBProvider({
     required this.sqliteDbLayer,
+    required this.configDBLayer,
     required this.qrCodeDbLayer
   });
   final SQLiteDBLayer sqliteDbLayer;
   final QRCodeDBLayer qrCodeDbLayer;
+  final ConfigDBLayer configDBLayer;
   static Database? _database;
 
   Future<Database> get database async {
@@ -35,13 +39,17 @@ class DBProvider {
 
 
   /// QR CODE LAYER
-  Future<List<QRCode>> getAllQRCodes() async => await qrCodeDbLayer.getAllGRCodes(_database!);
-  Future<void> deleteAtonedQRCodes(List<QRCode> qrs) => qrCodeDbLayer.deleteAtonedQRCodes(_database!, qrs);
+  Future<List<QRCode>> getActiveQRCodes() async => await qrCodeDbLayer.getActiveQRCodes(_database!);
+  Future<List<QRCode>> getAtonedQRCodes() async => await qrCodeDbLayer.getAtonedQRCodes(_database!);
+  Future<void> setStatusToSent(List<QRCode> qrs) => qrCodeDbLayer.setStatusToSent(_database!, qrs);
   Future<int> addQRCode(QRCode qr) => qrCodeDbLayer.addQRCode(_database!, qr);
   Future<bool> checkIfQRCodeExist(QRCode qr) async => qrCodeDbLayer.checkIfQRCodeExist(_database!, qr);
   Future<QRCode> getQRCodeByValue(String value) => qrCodeDbLayer.getQRCodeByValue(_database!, value);
 
-
+  /// CONFIG DATABASE LAYER
+  Future<AppConfig> getConfig() => configDBLayer.getConfig(_database!);
+  Future<int> setFactoryName(String name) => configDBLayer.setFactoryName(_database!, name);
+  Future<int> setAuthToken(String token) => configDBLayer.setAuthToken(_database!, token);
 }
 
 String dateFormatter(DateTime date) {

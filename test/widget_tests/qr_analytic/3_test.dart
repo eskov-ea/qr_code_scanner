@@ -6,7 +6,9 @@ import 'package:qrs_scaner/mocks/db/mock_db_service.dart';
 import 'package:qrs_scaner/mocks/services/api/mock_api_provider.dart';
 import 'package:qrs_scaner/mocks/services/api/mock_qr_sending_manager.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
+import 'package:qrs_scaner/services/api/api_provider.dart';
 import 'package:qrs_scaner/services/api/api_repository.dart';
+import 'package:qrs_scaner/services/cache_manager/cache_manager.dart';
 import 'package:qrs_scaner/services/database/database_laers/qr_code_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/sqlite_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
@@ -23,8 +25,9 @@ void main() {
   sqfliteTestInit();
   setUpAll(() {
     GetIt.I.registerSingleton<DBProvider>(
-        Mock_DBProvider(sqliteDbLayer: SQLiteDBLayer(), qrCodeDbLayer: QRCodeDBLayer())
+        Mock_DatabaseService(sqliteDbLayer: SQLiteDBLayer(), qrCodeDbLayer: QRCodeDBLayer())
     );
+    GetIt.I.registerSingleton<CacheManager>(CacheManager());
     GetIt.I.registerSingleton<QRCodeSendingManager>(QRCodeSendingManager(repository: QRCodeApiRepository(provider: Mock_QRCodeApiProvider())));
   });
 

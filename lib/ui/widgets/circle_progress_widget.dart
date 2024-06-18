@@ -33,6 +33,7 @@ class CircleProgressWidget extends StatelessWidget {
               child: CircularProgressIndicator(
                 color: Color(0xFF0B17A4),
                 strokeWidth: 6.0,
+                strokeCap: StrokeCap.round,
               ),
             ),
             SizedBox(height: 15),

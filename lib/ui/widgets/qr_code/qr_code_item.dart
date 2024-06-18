@@ -12,12 +12,14 @@ class QRCodeItem extends StatefulWidget {
     required this.selectedMode,
     required this.selectedCodes,
     required this.setSelected,
+    required this.disableSending,
     super.key
   });
 
   final QRCode qr;
   final bool lastIndex;
   final bool selectedMode;
+  final bool disableSending;
   final Function(bool) setSelected;
   final ValueNotifier<List<QRCode>> selectedCodes;
 
@@ -29,7 +31,6 @@ class _QRCodeItemState extends State<QRCodeItem> {
   bool selected = false;
 
   void _onSelectedChange() {
-    print("ADD QR: ${widget.selectedCodes.value}");
     setState(() {
       selected = widget.selectedCodes.value.contains(widget.qr);
     });
@@ -52,6 +53,7 @@ class _QRCodeItemState extends State<QRCodeItem> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onLongPress: () {
+        if (widget.disableSending) return;
         widget.setSelected(true);
 
         if ( !widget.selectedCodes.value.contains(widget.qr) ) {
@@ -69,7 +71,11 @@ class _QRCodeItemState extends State<QRCodeItem> {
       },
       child: Container(
         height: 50,
-        margin: EdgeInsets.only(bottom: widget.lastIndex ? 10 : 5),
+        margin: EdgeInsets.only(
+          left: 10,
+          right: 10,
+          bottom: widget.lastIndex ? 10 : 5
+        ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(6)),
           color: AppColors.backgroundMain2

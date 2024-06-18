@@ -16,11 +16,29 @@ class QRCodeDBLayer {
     }
   }
 
-  Future<List<QRCode>> getAllGRCodes(Database db) async {
+  Future<List<QRCode>> getActiveQRCodes(Database db) async {
     try {
       return await db.transaction((txn) async {
         List<Object> res = await txn.rawQuery('''
             SELECT * FROM qr_codes 
+            WHERE status = 0 
+            ORDER BY created_at DESC;
+        ''');
+
+        return res.map((el) => QRCode.fromJson(el)).toList();
+      });
+    } catch (err, stackTrace) {
+      print("Getting QR codes: Failed to read QR codes from DB: $err\r\n$stackTrace");
+      rethrow;
+    }
+  }
+
+  Future<List<QRCode>> getAtonedQRCodes(Database db) async {
+    try {
+      return await db.transaction((txn) async {
+        List<Object> res = await txn.rawQuery('''
+            SELECT * FROM qr_codes 
+            WHERE status = 1 
             ORDER BY created_at DESC;
         ''');
 
@@ -68,13 +86,13 @@ class QRCodeDBLayer {
     });
   }
 
-  Future<int> deleteAtonedQRCodes(Database db, List<QRCode> qrs) async {
+  Future<int> setStatusToSent(Database db, List<QRCode> qrs) async {
     try {
       return await db.transaction((txn) async {
         final whereQrValue = <String>[];
         qrs.forEach((qr) { whereQrValue.add(qr.value);});
-        int res = await txn.rawDelete(
-            'DELETE FROM qr_codes WHERE value IN (${List.filled(qrs.length, '?').join(',')}); ',
+        int res = await txn.rawUpdate(
+            'UPDATE qr_codes SET status = 1 WHERE value IN (${List.filled(qrs.length, '?').join(',')}); ',
             [...whereQrValue]
         );
 

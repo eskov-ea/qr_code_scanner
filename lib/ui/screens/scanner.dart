@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:qrs_scaner/extentions/date_extension.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
 import 'package:qrs_scaner/services/qr_sending_manager/qr_sending_manager.dart';
@@ -30,12 +32,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
   QRViewController? controller;
   final allowedFormat = [BarcodeFormat.dataMatrix];
   final db = GetIt.instance.get<DBProvider>();
-  bool cameraActive = false;
+  final _qrCodeSendingManager = GetIt.instance.get<QRCodeSendingManager>();
+  bool cameraActive = true;
 
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
     controller.scannedDataStream.listen((scanData) {
-      _audioManager.invokeMethod("PLAY_SCANNER_SOUND");
       cameraActive = false;
       controller.pauseCamera();
       if (scanData.code != null) {
@@ -71,13 +73,22 @@ class _ScannerScreenState extends State<ScannerScreen> {
       PopupManager.showLoadingPopup(context: context, message: 'Сохранение QR-кода в базу');
       final res = await db.addQRCode(qr);
       if (res > 0) {
+        _qrCodeSendingManager.addQRCodeToDB(qr);
+        _audioManager.invokeMethod("PLAY_SCANNER_SOUND");
         Navigator.of(context).pop();
+        cameraActive = true;
+        controller!.resumeCamera();
       } else {
+        cameraActive = false;
+        controller!.pauseCamera();
+        _audioManager.invokeMethod("PLAY_ERROR_SOUND");
         final QRCode code = await db.getQRCodeByValue(qr.value);
         Navigator.of(context).pop();
-        PopupManager.showInfoPopup(context, dismissible: true, message: 'Данный QR код уже был зарегистрирован в системе ${code.createdAt}' );
+        PopupManager.showQRCodeExist(context, () {
+          cameraActive = true;
+          controller!.resumeCamera();
+        }, "${DateTimeExtension.formatDate(code.createdAt)}");
       }
-      controller!.resumeCamera();
     }  catch(err, stackTrace) {
       Navigator.of(context).pop();
       print("Saving QR error: $err");
@@ -92,7 +103,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     print('${DateTime.now().toIso8601String()}_onPermissionSet $p');
     if (!p) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('no Permission')),
+        const SnackBar(content: Text('Необходимо разрешить доступ к камере')),
       );
     }
   }

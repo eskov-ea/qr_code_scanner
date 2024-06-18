@@ -82,7 +82,7 @@ Future main() async {
       await dbProvider.addQRCode(QRCode(value: "test_value3", status: 0, createdAt: DateTime.now(), deletedAt: null));
       await dbProvider.addQRCode(QRCode(value: "test_value4", status: 0, createdAt: DateTime.now(), deletedAt: null));
 
-      final result = await dbProvider.getAllQRCodes();
+      final result = await dbProvider.getActiveQRCodes();
 
       expect(result.length, 4);
       await db.close();
@@ -93,7 +93,7 @@ Future main() async {
       await dbProvider.addQRCode(QRCode(value: "test_value1", status: 0, createdAt: DateTime.now(), deletedAt: null));
       await dbProvider.addQRCode(QRCode(value: "test_value1", status: 0, createdAt: DateTime.now(), deletedAt: null));
 
-      final result = await dbProvider.getAllQRCodes();
+      final result = await dbProvider.getActiveQRCodes();
 
       expect(result.length, 1);
       await db.close();
@@ -109,12 +109,12 @@ Future main() async {
       await dbProvider.addQRCode(QRCode(value: "test_value3", status: 0, createdAt: DateTime.now(), deletedAt: null));
       await dbProvider.addQRCode(QRCode(value: "test_value4", status: 0, createdAt: DateTime.now(), deletedAt: null));
 
-      await dbProvider.deleteAtonedQRCodes([QRCode(value: "test_value1", status: 0, createdAt: DateTime.now(), deletedAt: null), QRCode(value: "test_value2", status: 0, createdAt: DateTime.now(), deletedAt: null)]);
-      final result = await dbProvider.getAllQRCodes();
+      await dbProvider.setStatusToSent([QRCode(value: "test_value1", status: 0, createdAt: DateTime.now(), deletedAt: null), QRCode(value: "test_value2", status: 0, createdAt: DateTime.now(), deletedAt: null)]);
+      final result = await dbProvider.getActiveQRCodes();
 
       expect(result.length, 2);
-      expect(result[0], QRCode(value: "test_value3", status: 0, createdAt: DateTime.now(), deletedAt: null));
-      expect(result[1], QRCode(value: "test_value4", status: 0, createdAt: DateTime.now(), deletedAt: null));
+      expect(result[0], QRCode(value: "test_value4", status: 0, createdAt: DateTime.now(), deletedAt: null));
+      expect(result[1], QRCode(value: "test_value3", status: 0, createdAt: DateTime.now(), deletedAt: null));
 
       await db.close();
     });

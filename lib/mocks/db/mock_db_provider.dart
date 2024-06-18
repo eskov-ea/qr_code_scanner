@@ -1,6 +1,8 @@
 import 'package:qrs_scaner/exceptions/exceptions.dart';
 import 'package:qrs_scaner/extentions/list.dart';
+import 'package:qrs_scaner/models/app_config.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
+import 'package:qrs_scaner/services/database/database_laers/config_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/qr_code_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/sqlite_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
@@ -46,9 +48,11 @@ class Mock_DBProvider implements DBProvider {
   @override
   Future<int> addQRCode(QRCode qr) => qrCodeDbLayer.addQRCode(_database!, qr);
   @override
-  Future<List<QRCode>> getAllQRCodes() => qrCodeDbLayer.getAllGRCodes(_database!);
+  Future<List<QRCode>> getActiveQRCodes() => qrCodeDbLayer.getActiveQRCodes(_database!);
   @override
-  Future<void> deleteAtonedQRCodes(List<QRCode> qrs) => qrCodeDbLayer.deleteAtonedQRCodes(_database!, qrs);
+  Future<void> setStatusToSent(List<QRCode> qrs) => qrCodeDbLayer.setStatusToSent(_database!, qrs);
+  @override
+  Future<List<QRCode>> getAtonedQRCodes() async => await qrCodeDbLayer.getAtonedQRCodes(_database!);
   @override
   Future<bool> checkIfQRCodeExist(QRCode qr) => qrCodeDbLayer.checkIfQRCodeExist(_database!, qr);
   @override
@@ -60,6 +64,28 @@ class Mock_DBProvider implements DBProvider {
   @override
   Future<QRCode> getQRCodeByValue(String value) {
     // TODO: implement getQRCodeByValue
+    throw UnimplementedError();
+  }
+
+  @override
+  // TODO: implement configDBLayer
+  ConfigDBLayer get configDBLayer => throw UnimplementedError();
+
+  @override
+  Future<AppConfig> getConfig() {
+    // TODO: implement getConfig
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<int> setFactoryName(String name) {
+    // TODO: implement setFactoryName
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<int> setAuthToken(String name) {
+    // TODO: implement setAuthToken
     throw UnimplementedError();
   }
 

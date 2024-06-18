@@ -69,7 +69,7 @@ class QRCodeSendingManager extends IQRCodeSendingManager {
         sinkEvent(QRStreamUploadingEvent(payload: payload));
 
       } catch(err, stackTrace) {
-        print("Error while sending codes: $err");
+        print("Error while sending codes: $err, $stackTrace");
         if (attempt >= 5) {
           _currentState = QRStreamState.none;
           payload = QRStreamPayload(totalCodeCount: totalCount, successCodeCount: successfullySent,
@@ -92,14 +92,14 @@ class QRCodeSendingManager extends IQRCodeSendingManager {
     sinkState(_currentState);
 
     /// now we can delete this codes from db and inform UI
-    deleteCodesFromDB(atonedQRCodes);
+    setQrCodesAsAtoned(atonedQRCodes);
   }
 
-  Future<void> deleteCodesFromDB(List<QRCode> codes) async {
+  Future<void> setQrCodesAsAtoned(List<QRCode> codes) async {
     sinkState(QRStreamState.deleting);
 
     try {
-      await db.deleteAtonedQRCodes(codes);
+      await db.setStatusToSent(codes);
 
       _currentState = QRStreamState.updated;
       sinkState(_currentState);
@@ -112,7 +112,6 @@ class QRCodeSendingManager extends IQRCodeSendingManager {
   }
 
   Future<void> addQRCodeToDB(QRCode qr) async {
-    print("Sink QR code");
     sinkQRCode(qr);
   }
 

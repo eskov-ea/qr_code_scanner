@@ -6,5 +6,6 @@ class QRCodeApiRepository {
 
   const QRCodeApiRepository({required this.provider});
 
-  Future<List<QRCode>> atoneQRCodes(List<QRCode> codes) async => await provider.atoneQRCodes(codes);
+  Future<List<String>> atoneQRCodes(List<QRCode> codes) async => await provider.atoneQRCodes(codes);
+  Future<String> login({required String email, required String password})  => provider.login(email, password);
 }

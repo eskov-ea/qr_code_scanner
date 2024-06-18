@@ -50,4 +50,13 @@ class DateTimeExtension {
     print("DATE TIME::: $date1 <--> $date2");
     return date1.year == date2.year && date1.month == date2.month && date1.day == date2.day;
   }
+
+  static formatDate(DateTime datetime) {
+    final time = DateFormat.Hm().format(datetime);
+    final dateArray = DateFormat.yMd().format(datetime).split('/');
+    final month = int.parse(dateArray[0]) < 10 ? "0${dateArray[0]}" : dateArray[0];
+    String date = "${dateArray[1]}.$month.${dateArray[2]}";
+
+    return "$date $time";
+  }
 }

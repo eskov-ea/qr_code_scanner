@@ -44,12 +44,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500, letterSpacing: 1.0, textBaseline: TextBaseline.alphabetic, height: 1, color: Colors.white),
               ),
               SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text("Вы вошли как: гость",
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, letterSpacing: 1.0, height: 1, color: Colors.white),
-                )
-              ),
               SizedBox(height: 5),
             ],
           ),

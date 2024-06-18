@@ -1,5 +1,7 @@
 import 'package:qrs_scaner/extentions/list.dart';
+import 'package:qrs_scaner/models/app_config.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
+import 'package:qrs_scaner/services/database/database_laers/config_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/qr_code_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/sqlite_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
@@ -66,14 +68,14 @@ class Mock_DatabaseService implements DBProvider{
 
 
   @override
-  Future<List<QRCode>> getAllQRCodes() async {
+  Future<List<QRCode>> getActiveQRCodes() async {
     await Future.delayed(const Duration(seconds: 2));
     print("GET ALL QR CODES: ${codes.length}");
     return codes.reversed.toList();
   }
 
   @override
-  Future<int> deleteAtonedQRCodes(List<QRCode> qrs) async {
+  Future<int> setStatusToSent(List<QRCode> qrs) async {
     try {
       await Future.delayed(const Duration(seconds: 2));
 
@@ -121,6 +123,33 @@ class Mock_DatabaseService implements DBProvider{
   @override
   Future<QRCode> getQRCodeByValue(String value) {
     // TODO: implement getQRCodeByValue
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<QRCode>> getAtonedQRCodes() {
+    // TODO: implement getAtonedQRCodes
+    throw UnimplementedError();
+  }
+
+  @override
+  // TODO: implement configDBLayer
+  ConfigDBLayer get configDBLayer => throw UnimplementedError();
+
+  @override
+  Future<AppConfig> getConfig() {
+    return Future(() => AppConfig.empty);
+  }
+
+  @override
+  Future<int> setFactoryName(String name) {
+    // TODO: implement setFactoryName
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<int> setAuthToken(String name) {
+    // TODO: implement setAuthToken
     throw UnimplementedError();
   }
 

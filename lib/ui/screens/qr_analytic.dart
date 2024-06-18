@@ -11,7 +11,6 @@ import 'package:qrs_scaner/theme.dart';
 import 'package:qrs_scaner/ui/widgets/circle_progress_widget.dart';
 import 'package:qrs_scaner/ui/widgets/qr_code/qr_code_item.dart';
 import 'package:qrs_scaner/ui/widgets/qr_code/qr_code_list_date.dart';
-import 'package:qrs_scaner/ui/widgets/popup_manager.dart';
 
 class QRAnalyticScreen extends StatefulWidget {
   const QRAnalyticScreen({
@@ -31,13 +30,15 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
   final String defaultErrorMessage = "Что-то пошло не так. Попробуйте еще раз.";
   final QRCodeSendingManager _qrCodeSendingManager = GetIt.instance.get<QRCodeSendingManager>();
   List<QRCode>? qrcodes;
-  final List<String> menuList = ['Все', 'Проведенные с ошибкой'];
+  final List<String> menuList = ['Активные', 'Проведенные'];
   String? dropdownValue;
   ValueNotifier<List<QRCode>> selectedCodes = ValueNotifier<List<QRCode>>([]);
   bool selectedMode = false;
   bool loading = false;
   bool error = false;
+  bool disableSending = false;
   String? errorMessage;
+  int selectedCodesCount = 0;
   final _gradient = const LinearGradient(
     colors: [
       Color(0xFFE3E3E3),
@@ -61,7 +62,6 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
     initializeQRCodes();
     dropdownValue = menuList.first;
     _qrManagerStateSubscription = GetIt.instance.get<QRCodeSendingManager>().state.listen((QRStreamState state) {
-      print("QRStreamState $state");
       if (state == QRStreamState.updated) {
         initializeQRCodes();
       } else if (state == QRStreamState.deleting) {
@@ -73,16 +73,21 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
       }
     });
     _qrManagerCodesSubscription = GetIt.instance.get<QRCodeSendingManager>().codes.listen((qr) {
-      print("QRStreamCodes:: $qr");
       setState(() {
         qrcodes!.add(qr);
       });
+    });
+    selectedCodes.addListener(_onSelectedCodesChange);
+  }
+
+  void _onSelectedCodesChange() {
+    setState(() {
+      selectedCodesCount = selectedCodes.value.length;
     });
   }
 
   @override
   void dispose() {
-    print("WE DISPOSE IT!!");
     _qrManagerStateSubscription.cancel();
     _qrManagerCodesSubscription.cancel();
     super.dispose();
@@ -98,7 +103,7 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
     try {
       //TODO: create loader widget while initializing DB
       await db.database;
-      final codes = await db.getAllQRCodes();
+      final codes = await db.getActiveQRCodes();
       print("Getting QR codes: $codes");
       setState(() {
         qrcodes = codes;
@@ -111,7 +116,6 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
         loading = false;
       });
     } catch(err) {
-      print("Db error: $err");
       setState(() {
         error = true;
         loading = false;
@@ -120,34 +124,22 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
   }
   Future<void> getQRCodesByQuery(String? value) async {
     if (value == menuList[0]) {
-      final codes = await db.getAllQRCodes();
+      final codes = await db.getActiveQRCodes();
       setState(() {
         qrcodes = codes;
+        disableSending = false;
+        selectedMode = false;
       });
     } else if (value == menuList[1]) {
-      // setState(() {
-      //   qrcodes = [];
-      // });
-    } else if (value == menuList[2]) {
-      // setState(() {
-      //   qrcodes = [];
-      // });
+      final codes = await db.getAtonedQRCodes();
+      setState(() {
+        qrcodes = codes;
+        disableSending = true;
+        selectedMode = false;
+      });
     }
   }
-  Future<void> deleteQRCodes() async {
-    try {
-      PopupManager.showLoadingPopup(context: context);
-      await db.deleteAtonedQRCodes(selectedCodes.value);
 
-      await initializeQRCodes();
-      setSelectedMode(false);
-      selectedCodes.value = [];
-      Navigator.of(context).pop();
-    } catch(err, stackTrace) {
-      Navigator.of(context).pop();
-
-    }
-  }
   bool shouldRenderDateWidget(int index) {
     return index == 0 || !DateTimeExtension.isSameDateWithTimeZone(qrcodes![index].createdAt, qrcodes![index - 1].createdAt);
   }
@@ -156,21 +148,23 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.backgroundMain3,
-      child: Container(
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-          color: Colors.white,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
         ),
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            _mapStateToWidget(),
-            if (selectedMode) _controlPanel()
-          ],
-        )
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+          ),
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              _mapStateToWidget(),
+              if (selectedMode) _controlPanel()
+            ],
+          )
+        ),
       )
     );
   }
@@ -252,62 +246,56 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
         ),
       );
     }
-    if (qrcodes != null && qrcodes!.isNotEmpty) {
-      return Container(
-        key: const Key("qr_analytics_screen_qr_codes_list_widget"),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(10)),
-              child: Container(
-                height: 100,
-                color: AppColors.backgroundNeutral,
-                child: _sortControls(),
-              ),
-            ),
-            const SizedBox(height: 5),
-            Expanded(
-              child: Scrollbar(
-                controller: _controller,
-                thumbVisibility: false,
-                thickness: 5,
-                trackVisibility: false,
-                radius: const Radius.circular(7),
-                scrollbarOrientation: ScrollbarOrientation.right,
-                child: CustomScrollView(
-                  slivers: [
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        childCount: qrcodes!.length,
-                          (context, index) {
-                            return Column(
-                              children: [
-                                if (shouldRenderDateWidget(index)) QRCodeListDate(qrcodes![index].createdAt),
-                                QRCodeItem(
-                                  qr: qrcodes![index],
-                                  lastIndex: index == qrcodes!.length - 1,
-                                  selectedMode: selectedMode,
-                                  selectedCodes: selectedCodes,
-                                  setSelected: setSelectedMode,
-                                )
-                              ],
-                            );
-                          }
-                      )
+    if (qrcodes != null) {
+      return Column(
+        children: [
+          Container(
+            height: 110,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            color: AppColors.backgroundNeutral,
+            child: _sortControls(),
+          ),
+          qrcodes!.isNotEmpty ? Expanded(
+            child: Scrollbar(
+              controller: _controller,
+              thumbVisibility: false,
+              thickness: 5,
+              trackVisibility: false,
+              radius: const Radius.circular(7),
+              scrollbarOrientation: ScrollbarOrientation.right,
+              child: CustomScrollView(
+                slivers: [
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      childCount: qrcodes!.length,
+                        (context, index) {
+                          return Column(
+                            children: [
+                              if (shouldRenderDateWidget(index)) QRCodeListDate(qrcodes![index].createdAt),
+                              QRCodeItem(
+                                qr: qrcodes![index],
+                                lastIndex: index == qrcodes!.length - 1,
+                                selectedMode: selectedMode,
+                                selectedCodes: selectedCodes,
+                                setSelected: setSelectedMode,
+                                disableSending: disableSending
+                              )
+                            ],
+                          );
+                        }
                     )
-                  ],
-                ),
+                  )
+                ],
               ),
             ),
-            if (selectedMode)  const SizedBox(height: 60)
-          ],
-        ),
-      );
-    } else if (qrcodes != null && qrcodes!.isEmpty) {
-      return const Center(
-        key: Key("qr_analytics_screen_empty_list_widget"),
-        child: Text('Нет сохраненных QR-кодов'),
+          ) : const Expanded(
+            child: Center(
+              key: Key("qr_analytics_screen_empty_list_widget"),
+              child: Text('Нет сохраненных QR-кодов'),
+            ),
+          ),
+          if (selectedMode)  const SizedBox(height: 60)
+        ],
       );
     } else {
       return const Center(
@@ -357,6 +345,8 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
               width: 120,
               child: InkWell(
                 onTap: () {
+                  if (selectedCodes.value.isEmpty) return;
+
                   _qrCodeSendingManager.sendQRCodesToServer(selectedCodes.value);
                 },
                 splashColor: Colors.white24,
@@ -364,7 +354,7 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
                   padding: const EdgeInsets.only(right: 20),
                   alignment: Alignment.centerRight,
                   child: Text("Погасить",
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                    style: TextStyle(fontSize: 16, color: selectedCodesCount > 0 ? Colors.white : Colors.grey),
                   ),
                 ),
               ),
@@ -441,7 +431,7 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
             child: SizedBox(
               height: 40,
               width: 100,
-              child: Material(
+              child: qrcodes!.isNotEmpty ? Material(
                 color: Colors.transparent,
                 child: Ink(
                   key: const Key("activate_selection_mode_btn"),
@@ -451,6 +441,7 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
                   ),
                   child: InkWell(
                     onTap: () {
+                      if (disableSending) return;
                       setSelectedMode(true);
                     },
                     splashColor: Colors.white24,
@@ -463,7 +454,7 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
                     ),
                   ),
                 ),
-              ),
+              ) : const SizedBox.shrink(),
             ),
           ),
           const SizedBox(height: 10),
