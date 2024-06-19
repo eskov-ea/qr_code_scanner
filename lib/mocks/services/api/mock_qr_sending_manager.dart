@@ -21,9 +21,7 @@ class Mock_QRCodeSendingManager extends IQRCodeSendingManager implements QRCodeS
 
   @override
   Future<void> addQRCodeToDB(QRCode qr) async {
-    await Future.delayed(const Duration(seconds: 2));
-    _currentState = QRStreamState.updated;
-    sinkState(_currentState);
+    sinkQRCode(qr);
   }
 
 

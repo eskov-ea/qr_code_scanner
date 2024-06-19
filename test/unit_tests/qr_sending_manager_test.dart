@@ -23,29 +23,56 @@ Future main() async {
         Mock_DatabaseService(sqliteDbLayer: SQLiteDBLayer(), qrCodeDbLayer: QRCodeDBLayer())
     );
     GetIt.I.registerSingleton<CacheManager>(CacheManager());
-    GetIt.I.registerSingleton<QRCodeSendingManager>(Mock_QRCodeSendingManager(repository: QRCodeApiRepository(provider: QRCodeApiProvider())));
+    GetIt.I.registerSingleton<QRCodeSendingManager>(QRCodeSendingManager(repository: QRCodeApiRepository(provider: Mock_QRCodeApiProvider())));
   });
 
-  test('State changes after event successfully completes', () async {
+  test('We can add [ QR Code ] to stream and listen to the result', () async {
     final manager = GetIt.instance.get<QRCodeSendingManager>();
-    final qr = QRCode(value: "test", status: 0, createdAt: DateTime.now(), deletedAt: null);
-
-    manager.addQRCodeToDB(qr);
-    await Future.delayed(const Duration(seconds: 3));
-    expect(manager.currentState, QRStreamState.updated);
-  });
-
-  test('State emits correctly and can be listened to', () async {
-    final manager = GetIt.instance.get<QRCodeSendingManager>();
-    final stream = manager.state;
+    final stream = manager.codes;
     final qr = QRCode(value: "test", status: 0, createdAt: DateTime.now(), deletedAt: null);
 
     stream.listen(
-      expectAsync1((state) {
-        expect(state, QRStreamState.updated);
-      })
+        expectAsync1((state) {
+          expect(state, qr);
+        })
     );
+
     manager.addQRCodeToDB(qr);
+  });
+
+
+  test('sendQRCodesToServer method', () async {
+    /// We get list of codes to send to the server as argument.
+    /// We emit state: [ SENDING ].
+    /// We run in a loop while all the codes are processed.
+    /// Inform UI that we prepare the portion for sending. Send this portion.
+    /// We emit state: [ NONE ] to inform UI that we finish and no work are running.
+
+    final manager = GetIt.instance.get<QRCodeSendingManager>();
+    final codes = [
+      QRCode(value: "test1", status: 0, createdAt: DateTime.now(), deletedAt: null),
+      QRCode(value: "test2", status: 0, createdAt: DateTime.now(), deletedAt: null),
+      QRCode(value: "test3", status: 0, createdAt: DateTime.now(), deletedAt: null),
+      QRCode(value: "test4", status: 0, createdAt: DateTime.now(), deletedAt: null),
+      QRCode(value: "test5", status: 0, createdAt: DateTime.now(), deletedAt: null),
+      QRCode(value: "test6", status: 0, createdAt: DateTime.now(), deletedAt: null),
+      QRCode(value: "test7", status: 0, createdAt: DateTime.now(), deletedAt: null),
+      QRCode(value: "test8", status: 0, createdAt: DateTime.now(), deletedAt: null),
+      QRCode(value: "test9", status: 0, createdAt: DateTime.now(), deletedAt: null),
+      QRCode(value: "test10", status: 0, createdAt: DateTime.now(), deletedAt: null),
+    ];
+    final states = <QRStreamState>[];
+    manager.state.listen((state) { states.add(state); });
+
+    manager.sendQRCodesToServer(codes);
+
+    await Future.delayed(const Duration(seconds: 5));
+
+    expect(states[0], QRStreamState.sending);
+    expect(states[1], QRStreamState.none);
+    expect(states[2], QRStreamState.deleting);
+    expect(states[3], QRStreamState.updated);
+
   });
 
 

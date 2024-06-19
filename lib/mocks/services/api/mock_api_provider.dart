@@ -5,7 +5,7 @@ class Mock_QRCodeApiProvider implements QRCodeApiProvider{
 
   @override
   Future<List<String>> atoneQRCodes(List<QRCode> codes) async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 1));
 
     final result = <String>[];
     for (var i = 0; i < codes.length; ++i) {
