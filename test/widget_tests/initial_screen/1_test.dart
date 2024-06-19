@@ -37,18 +37,21 @@ void main() {
         await tester.pumpWidget(
             MaterialApp(
               navigatorObservers: [mockObserver],
+              // onGenerateRoute: (settings) {
+              //   print("Navigation --> settings: ${settings.name}");
+              //   return null;
+              // },
               home:  InitialScreen()
             )
         );
         final InitialScreenState state = tester.state(find.byType(InitialScreen));
         expect(find.byType(CircleProgressWidget), findsOneWidget);
-        await Future.delayed(const Duration(seconds: 6));
+        await Future.delayed(const Duration(seconds: 2));
         // expect(find.byType(AuthScreen), findsOneWidget);
-        verify(() => mockObserver.didPop(any(), any()));
-        // verify(() => mockObserver.didReplace(newRoute: any(), oldRoute: any()));
+        // verify(() => mockObserver.didPop(any(), any()));
+        verify(() => mockObserver.didReplace(newRoute: any(), oldRoute: any()));
       });
     });
-
   });
 
 }

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
-import 'package:intl/intl.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qrs_scaner/extentions/date_extension.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
@@ -21,10 +20,11 @@ class ScannerScreen extends StatefulWidget {
   final ValueNotifier<int> selectedTab;
 
   @override
-  State<ScannerScreen> createState() => _ScannerScreenState();
+  State<ScannerScreen> createState() => ScannerScreenState();
 }
 
-class _ScannerScreenState extends State<ScannerScreen> {
+@visibleForTesting
+class ScannerScreenState extends State<ScannerScreen> {
 
   final GlobalKey qrKey = GlobalKey(debugLabel: "QRScanner");
   final _audioManager = const MethodChannel("com.application.scanner/audio_manager");
@@ -38,6 +38,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
     controller.scannedDataStream.listen((scanData) {
+      print("onRecognizeQR: $scanData");
       cameraActive = false;
       controller.pauseCamera();
       if (scanData.code != null) {
@@ -153,6 +154,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           children: [
             const SizedBox(height: 20),
             ClipRRect(
+              key: const Key("ss_scanner_view"),
               borderRadius: const BorderRadius.all(Radius.circular(10)),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -176,10 +178,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
             ),
             const SizedBox(height: 10),
             const Expanded(
+              key: Key("ss_code_events_console_screen"),
               child: Console()
             ),
             const SizedBox(height: 20),
             SizedBox(
+              key: const Key("ss_scanner_controls_panel"),
               height: 60,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -234,6 +238,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     child: Material(
                       color: Colors.transparent,
                       child: Ink(
+                        key: const Key("ss_scanner_control_resume_button"),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.all(Radius.circular(6)),
                           color: AppColors.cardColor5,
