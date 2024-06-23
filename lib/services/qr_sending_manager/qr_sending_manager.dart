@@ -3,6 +3,7 @@ import 'package:qrs_scaner/models/qr_code.dart';
 import 'package:qrs_scaner/services/api/api_provider.dart';
 import 'package:qrs_scaner/services/api/api_repository.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
+import 'package:qrs_scaner/services/log_manager/log_manager.dart';
 import 'qr_sending_manager_interface.dart';
 
 class QRCodeSendingManager extends IQRCodeSendingManager {
@@ -13,6 +14,7 @@ class QRCodeSendingManager extends IQRCodeSendingManager {
   final DBProvider db = GetIt.instance.get<DBProvider>();
   QRStreamState _currentState = QRStreamState.none;
   QRStreamState get currentState => _currentState;
+  final _logManager = GetIt.instance.get<LogManager>();
   final int qrPortion = 5;
 
 
@@ -96,7 +98,7 @@ class QRCodeSendingManager extends IQRCodeSendingManager {
   }
 
   Future<void> setQrCodesAsAtoned(List<QRCode> codes) async {
-    sinkState(QRStreamState.deleting);
+    sinkState(QRStreamState.atoned);
 
     try {
       await db.setStatusToSent(codes);
@@ -117,7 +119,7 @@ class QRCodeSendingManager extends IQRCodeSendingManager {
 
 }
 
-enum QRStreamState {  sending, none, deleting, updated, finishSending  }
+enum QRStreamState {  sending, none, atoned, updated, finishSending  }
 
 class QRStreamUploadingEvent {
   final QRStreamPayload payload;

@@ -12,8 +12,9 @@ class CacheManager {
   final _cache = <String, String?>{};
 
   Future<void> initialize() async {
-    await getToken();
-    await getFactoryName();
+    final config = await _db.getConfig();
+    _cache[_Keys.token] = config.authToken;
+    _cache[_Keys.factoryName] = config.factoryName;
   }
 
   Future<String?> getToken() async {

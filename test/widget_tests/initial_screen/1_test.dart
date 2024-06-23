@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:qrs_scaner/mocks/db/mock_db_service.dart';
 import 'package:qrs_scaner/services/cache_manager/cache_manager.dart';
+import 'package:qrs_scaner/services/database/database_laers/logs_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/qr_code_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/sqlite_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
@@ -24,7 +25,7 @@ void main() {
   registerFallbackValue(FakeRoute());
   setUpAll(() {
     GetIt.I.registerSingleton<DBProvider>(
-        Mock_DatabaseService(sqliteDbLayer: SQLiteDBLayer(), qrCodeDbLayer: QRCodeDBLayer())
+        Mock_DatabaseService(sqliteDbLayer: SQLiteDBLayer(), qrCodeDbLayer: QRCodeDBLayer(), logsDBLayer: LogsDBLayer())
     );
     GetIt.I.registerSingleton<CacheManager>(CacheManager());
   });

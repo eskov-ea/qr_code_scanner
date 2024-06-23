@@ -31,6 +31,11 @@ class DateTimeExtension {
     }
   }
 
+  static String getDate(DateTime date) {
+    final arr = DateFormat.yMd().format(date.add(DateTime.now().timeZoneOffset)).split('/');
+    return "${arr[1]}.${int.parse(arr[0]) > 9 ? arr[0] : '0${arr[0]}'}.${arr[2]}";
+  }
+
   static String getRussianDate(DateTime date) {
     final arr = DateFormat.yMd().format(date.add(DateTime.now().timeZoneOffset)).split('/');
     return [arr[1], getRussianMonth(date), arr[2]].join(" ");

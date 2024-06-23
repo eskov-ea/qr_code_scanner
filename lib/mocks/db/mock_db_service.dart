@@ -1,7 +1,9 @@
 import 'package:qrs_scaner/extentions/list.dart';
 import 'package:qrs_scaner/models/app_config.dart';
+import 'package:qrs_scaner/models/log.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
 import 'package:qrs_scaner/services/database/database_laers/config_db_layer.dart';
+import 'package:qrs_scaner/services/database/database_laers/logs_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/qr_code_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/sqlite_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
@@ -33,6 +35,15 @@ final mockQRCodes = [
   QRCode(value: "45646dfgfd89y", status: 0, createdAt: DateTime.parse("2019-09-24 14:05:00.000000"), deletedAt: null),
 ];
 
+List<Log> logSample = [
+  Log(id: 1, name: "Log 1", description: null, createdAt: DateTime.now().add(const Duration(hours: 1))),
+  Log(id: 2, name: "Log 2", description: null, createdAt: DateTime.now().add(const Duration(hours: 2))),
+  Log(id: 3, name: "Log 3", description: null, createdAt: DateTime.now().add(const Duration(hours: 3))),
+  Log(id: 4, name: "Log 4", description: null, createdAt: DateTime.now().add(const Duration(hours: 4))),
+  Log(id: 5, name: "Log 5", description: null, createdAt: DateTime.now().add(const Duration(hours: 5))),
+  Log(id: 6, name: "Log 6", description: null, createdAt: DateTime.now().add(const Duration(hours: 6)))
+];
+
 /// We use this class for Database widget tests.
 /// We don\'t care about testing Database methods in widget tests -
 /// we just need to get predictable values for the app.
@@ -40,10 +51,12 @@ class Mock_DatabaseService implements DBProvider{
 
   Mock_DatabaseService({
     required this.sqliteDbLayer,
-    required this.qrCodeDbLayer
+    required this.qrCodeDbLayer,
+    required this.logsDBLayer
   });
   final SQLiteDBLayer sqliteDbLayer;
   final QRCodeDBLayer qrCodeDbLayer;
+  final LogsDBLayer logsDBLayer;
   Database? _database;
   @override
   Future<Database> get database async {
@@ -96,7 +109,34 @@ class Mock_DatabaseService implements DBProvider{
     return Future(() => 1);
   }
 
-  /// Not implemented
+
+
+  @override
+  Future<List<Log>> readLogs() {
+    return Future(() => logSample);
+  }
+
+  @override
+  Future<void> saveLogs(List<Log> logs) {
+    logSample.addAll(logs);
+    return Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  @override
+  Future<int> deleteLogs() => Future(() {
+    int count = logSample.length;
+    logSample.clear();
+    return count;
+  });
+
+
+
+
+  ///
+  ///
+  /// NOT IMPLEMENTED
+  ///
+  ///
   @override
   Future<bool> checkIfQRCodeExist(QRCode qr) {
     // TODO: implement checkIfQRCodeExist
@@ -152,5 +192,8 @@ class Mock_DatabaseService implements DBProvider{
     // TODO: implement setAuthToken
     throw UnimplementedError();
   }
+
+  @override
+  Future<int> deleteAuthToken() => Future(() => 1);
 
 }

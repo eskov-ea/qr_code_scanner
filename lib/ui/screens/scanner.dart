@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:qrs_scaner/exceptions/exceptions.dart';
 import 'package:qrs_scaner/extentions/date_extension.dart';
+import 'package:qrs_scaner/models/log.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
+import 'package:qrs_scaner/services/error_handlers/error_handler_manager.dart';
+import 'package:qrs_scaner/services/log_manager/log_manager.dart';
 import 'package:qrs_scaner/services/qr_sending_manager/qr_sending_manager.dart';
 import 'package:qrs_scaner/theme.dart';
 import 'package:qrs_scaner/ui/widgets/console_widget.dart';
@@ -28,12 +32,17 @@ class ScannerScreenState extends State<ScannerScreen> {
 
   final GlobalKey qrKey = GlobalKey(debugLabel: "QRScanner");
   final _audioManager = const MethodChannel("com.application.scanner/audio_manager");
+  final _logManager = GetIt.instance.get<LogManager>();
+  final _errorManager = GetIt.instance.get<ErrorHandlerManager>();
   Barcode? result;
   QRViewController? controller;
   final allowedFormat = [BarcodeFormat.dataMatrix];
   final db = GetIt.instance.get<DBProvider>();
   final _qrCodeSendingManager = GetIt.instance.get<QRCodeSendingManager>();
   bool cameraActive = true;
+  DateTime? lastPermissionCheck;
+  bool? cameraPermission;
+  static const cameraNotPermittedMessage = "Для работы сканера необходимо разрешить доступ к камере. Вы можете сделать это в настройках приложения в списке приложений на устройстве.";
 
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
@@ -79,6 +88,7 @@ class ScannerScreenState extends State<ScannerScreen> {
         Navigator.of(context).pop();
         cameraActive = true;
         controller!.resumeCamera();
+        _logManager.addLogEntity(Log.fromEvent("QR код успешно сохранен."));
       } else {
         cameraActive = false;
         controller!.pauseCamera();
@@ -89,24 +99,112 @@ class ScannerScreenState extends State<ScannerScreen> {
           cameraActive = true;
           controller!.resumeCamera();
         }, "${DateTimeExtension.formatDate(code.createdAt)}");
+        _logManager.addLogEntity(Log.fromEvent("Ошибка! QR код [ ${code.value} ] уже сохранен!"));
       }
     }  catch(err, stackTrace) {
       Navigator.of(context).pop();
+      _logManager.addLogEntity(Log.fromEvent("Ошибка записи кода в базу данных!"));
+      _errorManager.sinkEvent(AppException(type: AppExceptionType.db));
       print("Saving QR error: $err");
     }
-  }
-
-  Future<void> showSavedQRDialog() async {
-
   }
 
   void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
     print('${DateTime.now().toIso8601String()}_onPermissionSet $p');
     if (!p) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Необходимо разрешить доступ к камере')),
-      );
+      if (lastPermissionCheck == null || lastPermissionCheck!.add(const Duration(seconds: 90)).compareTo(DateTime.now().toUtc()) < 0) {
+        lastPermissionCheck = DateTime.now().toUtc();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Необходимо разрешить доступ к камере')),
+        );
+      }
     }
+    if (cameraPermission == null || cameraPermission != p) {
+      setState(() {
+        cameraPermission = p;
+      });
+    }
+  }
+
+
+  Widget QRViewWrappedWidget(double scanArea) {
+    return Stack(
+      children: [
+        QRView(
+          key: qrKey,
+          overlay: QrScannerOverlayShape(
+              borderColor: Colors.red,
+              borderRadius: 10,
+              borderLength: 30,
+              borderWidth: 10,
+              cutOutSize: scanArea
+          ),
+          formatsAllowed: allowedFormat,
+          onQRViewCreated: _onQRViewCreated,
+          onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
+        ),
+        if (cameraPermission == null) const Center(
+          child: SizedBox(
+            width: 50,
+            height: 50,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              backgroundColor: Colors.white38,
+              strokeCap: StrokeCap.round,
+            ),
+          ),
+        ),
+        if (cameraPermission != null && !cameraPermission!) Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10),
+          child: Center(
+            child: GestureDetector(
+              onTap: () {
+
+              },
+              child: Container(
+                child: Text(cameraNotPermittedMessage,
+                  style: TextStyle(color: Colors.white, fontSize: 12, height: 1),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (cameraPermission != null && !cameraPermission!) Align(
+          alignment: Alignment.bottomRight,
+          child: Padding(
+            padding: EdgeInsets.only(right: 10, bottom: 10),
+            child: SizedBox(
+              width: 30,
+              height: 30,
+              child: Image.asset("assets/images/warning.png"),
+            ),
+          ),
+        ),
+        if (cameraPermission == true && cameraActive) Align(
+          alignment: Alignment.bottomRight,
+          child: Padding(
+            padding: EdgeInsets.only(right: 10, bottom: 10),
+            child: SizedBox(
+              width: 30,
+              height: 30,
+              child: Icon(Icons.circle, color: Colors.red, size: 20),
+            ),
+          ),
+        ),
+        if (cameraPermission == true && !cameraActive) Align(
+          alignment: Alignment.bottomRight,
+          child: Padding(
+            padding: EdgeInsets.only(right: 10, bottom: 10),
+            child: SizedBox(
+              width: 30,
+              height: 30,
+              child: Icon(Icons.pause, color: Colors.white, size: 20),
+            ),
+          ),
+        )
+      ],
+    );
   }
 
   @override
@@ -161,18 +259,9 @@ class ScannerScreenState extends State<ScannerScreen> {
                     maxHeight: 300,
                     minHeight: 200
                 ),
-                child: QRView(
-                  key: qrKey,
-                  overlay: QrScannerOverlayShape(
-                      borderColor: Colors.red,
-                      borderRadius: 10,
-                      borderLength: 30,
-                      borderWidth: 10,
-                      cutOutSize: scanArea
-                  ),
-                  formatsAllowed: allowedFormat,
-                  onQRViewCreated: _onQRViewCreated,
-                  onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
+                child: Container(
+                  color: Colors.black,
+                  child: QRViewWrappedWidget(scanArea),
                 ),
               ),
             ),

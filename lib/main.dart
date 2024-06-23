@@ -4,9 +4,12 @@ import 'package:qrs_scaner/services/api/api_provider.dart';
 import 'package:qrs_scaner/services/api/api_repository.dart';
 import 'package:qrs_scaner/services/cache_manager/cache_manager.dart';
 import 'package:qrs_scaner/services/database/database_laers/config_db_layer.dart';
+import 'package:qrs_scaner/services/database/database_laers/logs_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/qr_code_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/sqlite_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
+import 'package:qrs_scaner/services/error_handlers/error_handler_manager.dart';
+import 'package:qrs_scaner/services/log_manager/log_manager.dart';
 import 'package:qrs_scaner/services/qr_sending_manager/qr_sending_manager.dart';
 import 'package:qrs_scaner/ui/screens/initial_screen.dart';
 
@@ -17,8 +20,11 @@ void main() {
 void configureApp() {
   if (!GetIt.I.isRegistered<DBProvider>()) {
     GetIt.I.registerSingleton<DBProvider>(DBProvider(
-        sqliteDbLayer: SQLiteDBLayer(), qrCodeDbLayer: QRCodeDBLayer(), configDBLayer: ConfigDBLayer())
+        sqliteDbLayer: SQLiteDBLayer(), qrCodeDbLayer: QRCodeDBLayer(), configDBLayer: ConfigDBLayer(), logsDBLayer: LogsDBLayer())
     );
+  }
+  if (!GetIt.I.isRegistered<LogManager>()) {
+    GetIt.I.registerSingleton<LogManager>(LogManager());
   }
   if (!GetIt.I.isRegistered<CacheManager>()) {
     GetIt.I.registerSingleton<CacheManager>(CacheManager());
@@ -28,6 +34,9 @@ void configureApp() {
   }
   if (!GetIt.I.isRegistered<QRCodeSendingManager>()) {
     GetIt.I.registerSingleton<QRCodeSendingManager>(QRCodeSendingManager(repository: QRCodeApiRepository(provider: QRCodeApiProvider())));
+  }
+  if (!GetIt.I.isRegistered<ErrorHandlerManager>()) {
+    GetIt.I.registerSingleton<ErrorHandlerManager>(ErrorHandlerManager());
   }
 }
 

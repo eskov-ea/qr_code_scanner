@@ -1,8 +1,10 @@
 import 'package:qrs_scaner/exceptions/exceptions.dart';
 import 'package:qrs_scaner/extentions/list.dart';
 import 'package:qrs_scaner/models/app_config.dart';
+import 'package:qrs_scaner/models/log.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
 import 'package:qrs_scaner/services/database/database_laers/config_db_layer.dart';
+import 'package:qrs_scaner/services/database/database_laers/logs_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/qr_code_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/sqlite_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
@@ -18,10 +20,12 @@ import 'package:sqflite_common/sqlite_api.dart';
 /// test db instance we can be sure about this tests.
 class Mock_DBProvider implements DBProvider {
 
-  Mock_DBProvider({required this.sqliteDbLayer, required this.qrCodeDbLayer});
+  Mock_DBProvider({required this.sqliteDbLayer, required this.qrCodeDbLayer, required this.logsDBLayer, required this.configDBLayer});
 
   final SQLiteDBLayer sqliteDbLayer;
   final QRCodeDBLayer qrCodeDbLayer;
+  final ConfigDBLayer configDBLayer;
+  final LogsDBLayer logsDBLayer;
   Database? _database;
 
   @override
@@ -57,6 +61,15 @@ class Mock_DBProvider implements DBProvider {
   Future<bool> checkIfQRCodeExist(QRCode qr) => qrCodeDbLayer.checkIfQRCodeExist(_database!, qr);
   @override
   Future closeDatabase() => sqliteDbLayer.closeDatabase(_database!);
+  @override
+  Future<List<Log>> readLogs() => logsDBLayer.readLogs(_database!);
+  @override
+  Future<void> saveLogs(List<Log> logs) => logsDBLayer.saveLogs(_database!, logs);
+  @override
+  Future<int> deleteLogs() => logsDBLayer.deleteLogs(_database!);
+  @override
+  Future<int> deleteAuthToken() => configDBLayer.deleteAuthToken(_database!);
+
 
   @override
   bool checkIfTableExists(List<Map<String, Object?>> existingTables, String searchingTableName) => sqliteDbLayer.checkIfTableExists(existingTables, searchingTableName);
@@ -66,10 +79,6 @@ class Mock_DBProvider implements DBProvider {
     // TODO: implement getQRCodeByValue
     throw UnimplementedError();
   }
-
-  @override
-  // TODO: implement configDBLayer
-  ConfigDBLayer get configDBLayer => throw UnimplementedError();
 
   @override
   Future<AppConfig> getConfig() {

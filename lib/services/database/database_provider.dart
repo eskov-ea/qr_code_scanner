@@ -1,6 +1,8 @@
 import 'package:qrs_scaner/models/app_config.dart';
+import 'package:qrs_scaner/models/log.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
 import 'package:qrs_scaner/services/database/database_laers/config_db_layer.dart';
+import 'package:qrs_scaner/services/database/database_laers/logs_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/qr_code_db_layer.dart';
 import 'package:qrs_scaner/services/database/database_laers/sqlite_db_layer.dart';
 import 'package:sqflite/sqflite.dart';
@@ -11,19 +13,19 @@ class DBProvider {
   DBProvider({
     required this.sqliteDbLayer,
     required this.configDBLayer,
+    required this.logsDBLayer,
     required this.qrCodeDbLayer
   });
   final SQLiteDBLayer sqliteDbLayer;
   final QRCodeDBLayer qrCodeDbLayer;
   final ConfigDBLayer configDBLayer;
+  final LogsDBLayer logsDBLayer;
   static Database? _database;
 
   Future<Database> get database async {
-    print("We inited Database");
     if (_database != null) {
       return _database!;
     } else {
-      print("We inited Database");
       _database = await initDB();
       return _database!;
     }
@@ -50,6 +52,12 @@ class DBProvider {
   Future<AppConfig> getConfig() => configDBLayer.getConfig(_database!);
   Future<int> setFactoryName(String name) => configDBLayer.setFactoryName(_database!, name);
   Future<int> setAuthToken(String token) => configDBLayer.setAuthToken(_database!, token);
+  Future<int> deleteAuthToken() => configDBLayer.deleteAuthToken(_database!);
+
+  /// LOGS DATABASE LAYER
+  Future<void> saveLogs(List<Log> logs) => logsDBLayer.saveLogs(_database!, logs);
+  Future<List<Log>> readLogs() => logsDBLayer.readLogs(_database!);
+  Future<int> deleteLogs() => logsDBLayer.deleteLogs(_database!);
 }
 
 String dateFormatter(DateTime date) {

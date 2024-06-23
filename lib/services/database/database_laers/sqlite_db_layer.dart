@@ -1,3 +1,4 @@
+import 'package:qrs_scaner/exceptions/exceptions.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
 import 'package:qrs_scaner/services/database/tables.dart';
 import 'package:sqflite/sqflite.dart';
@@ -27,6 +28,9 @@ class SQLiteDBLayer {
           await db.execute('''
             INSERT INTO config(factory_name, auth_token) VALUES(NULL, NULL);
           ''');
+          await db.execute('''
+            INSERT INTO logs(name) VALUES("Добро пожаловать!\r\nДля использования MCFEF-сканера разрешите доступ к камере, поместите QR-код в область сканирования. Обратите внимание, QR-коды, которые не относятся к типу нашего производства - отсканированы не будут.\r\nДля отправки кодов в систему ЕРП выберите коды во владке 'QR-коды' и нажмите погасить.\r\n");
+          ''');
         },
         onOpen: (db) async {
           final List<Map<String, Object?>> rawTables =
@@ -39,8 +43,7 @@ class SQLiteDBLayer {
         },
       );
     } catch (err, stackTrace) {
-      print("Error openning database: $err\r\n$stackTrace");
-      rethrow;
+      throw AppException(type: AppExceptionType.db, message: "Ошибка инициализации базы данных. Свяжитесь с разработчиком.");
     }
   }
 

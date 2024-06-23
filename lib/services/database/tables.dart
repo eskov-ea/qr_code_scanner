@@ -11,5 +11,12 @@ final Map<String, String> tables = {
   'CREATE TABLE config( '
       'factory_name TEXT DEFAULT NULL, '
       'auth_token TEXT DEFAULT NULL'
+  ');',
+  'logs'  :
+  'CREATE TABLE logs( '
+      'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+      'name TEXT NOT NULL, '
+      'description TEXT DEFAULT NULL, '
+      'created_at DATETIME DEFAULT CURRENT_TIMESTAMP '
   ');'
 };

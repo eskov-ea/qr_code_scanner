@@ -1,11 +1,13 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:qrs_scaner/exceptions/exceptions.dart';
 import 'package:qrs_scaner/extentions/date_extension.dart';
+import 'package:qrs_scaner/models/log.dart';
 import 'package:qrs_scaner/models/qr_code.dart';
 import 'package:qrs_scaner/services/database/database_provider.dart';
+import 'package:qrs_scaner/services/error_handlers/error_handler_manager.dart';
+import 'package:qrs_scaner/services/log_manager/log_manager.dart';
 import 'package:qrs_scaner/services/qr_sending_manager/qr_sending_manager.dart';
 import 'package:qrs_scaner/theme.dart';
 import 'package:qrs_scaner/ui/widgets/circle_progress_widget.dart';
@@ -25,6 +27,8 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
 
   final ScrollController _controller = ScrollController();
   final db = GetIt.instance.get<DBProvider>();
+  final _logManager = GetIt.instance.get<LogManager>();
+  final _errorManager = GetIt.instance.get<ErrorHandlerManager>();
   late final StreamSubscription<QRStreamState> _qrManagerStateSubscription;
   late final StreamSubscription<QRCode> _qrManagerCodesSubscription;
   final String defaultErrorMessage = "Что-то пошло не так. Попробуйте еще раз.";
@@ -64,7 +68,8 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
     _qrManagerStateSubscription = GetIt.instance.get<QRCodeSendingManager>().state.listen((QRStreamState state) {
       if (state == QRStreamState.updated) {
         initializeQRCodes();
-      } else if (state == QRStreamState.deleting) {
+      } else if (state == QRStreamState.atoned) {
+        _logManager.addLogEntity(Log.fromEvent("Успешно погашено $selectedCodesCount кодов."));
         setState(() {
           qrcodes = null;
           selectedCodes.value = [];
@@ -95,24 +100,19 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
 
 
   Future<void> initializeQRCodes() async {
-    setState(() {
-      error = false;
-      errorMessage = null;
-      loading = true;
-    });
+    if (error) {
+      setState(() {
+        error = false;
+        errorMessage = null;
+        loading = true;
+      });
+    }
     try {
       //TODO: create loader widget while initializing DB
       await db.database;
       final codes = await db.getActiveQRCodes();
-      print("Getting QR codes: $codes");
       setState(() {
         qrcodes = codes;
-        loading = false;
-      });
-    } on AppException catch(err) {
-      setState(() {
-        error = true;
-        errorMessage = err.shownMessage();
         loading = false;
       });
     } catch(err) {
@@ -123,19 +123,32 @@ class QRAnalyticScreenState extends State<QRAnalyticScreen> {
     }
   }
   Future<void> getQRCodesByQuery(String? value) async {
-    if (value == menuList[0]) {
-      final codes = await db.getActiveQRCodes();
+    try {
+      if (error) {
+        setState(() {
+          error = false;
+        });
+      }
+      if (value == menuList[0]) {
+        final codes = await db.getActiveQRCodes();
+        setState(() {
+          qrcodes = codes;
+          disableSending = false;
+          selectedMode = false;
+        });
+      } else if (value == menuList[1]) {
+        final codes = await db.getAtonedQRCodes();
+        setState(() {
+          qrcodes = codes;
+          disableSending = true;
+          selectedMode = false;
+        });
+      }
+    } catch (err) {
+      _errorManager.sinkEvent(AppException(type: AppExceptionType.db));
       setState(() {
-        qrcodes = codes;
-        disableSending = false;
-        selectedMode = false;
-      });
-    } else if (value == menuList[1]) {
-      final codes = await db.getAtonedQRCodes();
-      setState(() {
-        qrcodes = codes;
-        disableSending = true;
-        selectedMode = false;
+        error = true;
+        qrcodes = [];
       });
     }
   }

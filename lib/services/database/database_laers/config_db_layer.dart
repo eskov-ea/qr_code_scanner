@@ -1,3 +1,4 @@
+import 'package:qrs_scaner/exceptions/exceptions.dart';
 import 'package:qrs_scaner/models/app_config.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -15,7 +16,7 @@ class ConfigDBLayer {
       });
     } catch (err, stackTrace) {
       print("Getting AppConfig error: $err\r\n$stackTrace");
-      rethrow;
+      throw AppException(type: AppExceptionType.db, message: "Ошибка чтения настроек из базы данных.");
     }
   }
 
@@ -39,6 +40,21 @@ class ConfigDBLayer {
             UPDATE config SET auth_token = "$token";
         ''');
         print('Set token: $res');
+        return res;
+      });
+    } catch (err, stackTrace) {
+      print("Setting auth token error: $err\r\n$stackTrace");
+      rethrow;
+    }
+  }
+
+  Future<int> deleteAuthToken(Database db) async {
+    try {
+      return await db.transaction((txn) async {
+        final res = await txn.rawUpdate('''
+            UPDATE config SET auth_token = NULL;
+        ''');
+        print('Delete token: $res');
         return res;
       });
     } catch (err, stackTrace) {
